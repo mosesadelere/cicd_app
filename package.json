@@ -4,8 +4,12 @@
   "description": "test",
   "main": "index.js",
   "scripts": {
+    "start": "node safevote.js",
     "test": "npm test",
     "build":  "safevote build"
+  },
+  "dependencies": {
+    "express": "4.21.2"
   },
   "repository": {
     "type": "git",
