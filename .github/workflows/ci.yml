@@ -9,7 +9,7 @@ on:
       - main
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,52 +24,46 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run build
-        run: npm run build
-
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '16'
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests
+      - name: Run test
         run: npm test
 
   deploy:
     runs-on: ubuntu-latest
-    needs: test
+    needs: build-test
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up deployment environment
+      - name: Deploy backend
         run: |
           echo "Setting up deployment environment"
+          scp -r . user@server:/path/to/backend
+          ssh user@server "cd /path/to/backend && npm install & pm2 restart server"
           # Replace this with any required setup commands
 
       - name: Deploy SafeVote
-        env:
-          DEPLOYMENT_KEY: ${{ secrets.DEPLOYMENT_KEY }}
         run: |
           echo "Deploying SafeVote to production"
           # Example deployment script
           ./deploy.sh
 
+  integration-tests:
+    runs-on:  ubuntu-latest
+    needs:  deploy
+
+    steps:
+      - name: Run Integration tests
+        run:  |
+          curl -f -f http://server:15550/health || exit 1
+          echo "Integration tests passed"
+
+  validation:
+    runs-on:  ubuntu-latest
+    needs:  integration-tests
+
       - name: Run validation tests
-        env:
-          VALIDATION_KEY: ${{ secrets.VALIDATION_KEY }}
         run: |
           echo "Running validation tests"
           ./validate.sh
+
+      - name: Simulate user actions
+        run:  |
+          robot --variable SUT_URL:http://server tests/robot
