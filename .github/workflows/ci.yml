@@ -59,6 +59,7 @@ jobs:
     runs-on:  ubuntu-latest
     needs:  integration-tests
 
+    steps:
       - name: Run validation tests
         run: |
           echo "Running validation tests"
